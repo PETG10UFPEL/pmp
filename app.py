@@ -423,7 +423,7 @@ with st.sidebar:
         if st.button("2) Recriar índice (embeddings)"):
             with st.spinner("Indexando e salvando no Drive..."):
                 t0 = time.perf_counter()
-                n, vectordb = build_index(
+                n, vectordb, upload_ok = build_index(
                     str(RAW_DOCS_DIR),
                     DB_DIR,
                     gdrive_folder_id=st.session_state.folder_id,
