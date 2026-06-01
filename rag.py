@@ -36,13 +36,11 @@ except Exception:
 
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 BASE_DIR = Path(__file__).resolve().parent
-DB_DIR_DEFAULT = str(BASE_DIR / "data" / "chroma_db")
+_on_cloud = Path("/mount/src").exists()
+DB_DIR_DEFAULT = "/tmp/chroma_db" if _on_cloud else str(BASE_DIR / "data" / "chroma_db")
 COLLECTION_NAME = os.getenv("COLLECTION_NAME", "wounds_knowledge")
 RELEVANCE_THRESHOLD = float(os.getenv("RELEVANCE_THRESHOLD", "0.4"))
-EMBED_MODEL = os.getenv(
-    "EMBED_MODEL",
-    "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-)
+EMBED_MODEL = os.getenv("EMBED_MODEL", "paraphrase-multilingual-mpnet-base-v2")
 
 SYSTEM_RULES = """Você é um assistente clínico-educacional do projeto PET-Saúde G10,
 especialista em feridas crônicas, avaliação clínica, prevenção, cuidado,

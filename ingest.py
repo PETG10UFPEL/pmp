@@ -250,25 +250,21 @@ def build_index(
             pass
 
     try:
-        import chromadb
-        from chromadb.config import Settings
-        from langchain_chroma import Chroma
+        Chroma = _get_chroma_class()
 
-        # Usa EphemeralClient sempre — evita todos os problemas de tenant/database
-        # do PersistentClient em ambientes cloud e locais com pasta recém-criada.
-        # No Streamlit Cloud o /tmp é apagado a cada reinício mesmo, então
-        # persistência em disco não tem valor prático.
-        print("[CHROMA] Usando EphemeralClient (memória)")
-        chroma_client = chromadb.EphemeralClient()
+        # Usa Chroma persistente em disco.
+        # Isso é essencial para que o índice exista em db_path, possa ser zipado,
+        # enviado ao Google Drive e restaurado depois que o Streamlit Cloud acordar.
+        print("[CHROMA] Usando persist_directory em disco")
 
         vectordb = Chroma(
-            client=chroma_client,
+            persist_directory=str(db_path),
             embedding_function=embeddings,
             collection_name=COLLECTION_NAME,
         )
-        print("[CHROMA] vectordb criado com sucesso.")
+        print("[CHROMA] vectordb persistente criado com sucesso.")
     except Exception as e:
-        print(f"[CHROMA][ERRO] Falha ao criar vectordb: {repr(e)}")
+        print(f"[CHROMA][ERRO] Falha ao criar vectordb persistente: {repr(e)}")
         raise
 
     # Lotes menores para reduzir risco de estouro no Streamlit Cloud
@@ -296,10 +292,25 @@ def build_index(
                 )
             raise
 
+    # Força gravação do índice no disco quando a versão do Chroma/LangChain expõe persist().
+    # Em versões mais novas, a persistência é automática; por isso o AttributeError é ignorado.
     try:
         vectordb.persist()
-    except Exception:
-        pass
+        print("[CHROMA] persist() executado.")
+    except AttributeError:
+        print("[CHROMA] persist() indisponível; persistência automática presumida.")
+    except Exception as e:
+        print(f"[CHROMA][AVISO] persist() falhou: {repr(e)}")
+
+    try:
+        files_after = [f for f in db_path.rglob("*") if f.is_file()]
+        total_after = sum(f.stat().st_size for f in files_after)
+        print(
+            f"[CHROMA] arquivos gravados={len(files_after)} | "
+            f"tamanho={total_after // 1024}KB"
+        )
+    except Exception as e:
+        print(f"[CHROMA][AVISO] erro ao verificar arquivos gravados: {e}")
 
     if skipped:
         print(f"Arquivos ignorados/erro: {len(skipped)}")
