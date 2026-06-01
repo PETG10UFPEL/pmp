@@ -27,7 +27,7 @@ EXCLUDED_DIR_NAMES = {
     'chroma_index',
     '__pycache__',
 }
-ALLOWED_EXTENSIONS = {'.pdf', '.docx'}
+ALLOWED_EXTENSIONS = {'.pdf'}
 
 
 def get_drive_service():
